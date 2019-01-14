@@ -41,7 +41,7 @@ type Page struct {
 	Comments []Comment
 }
 
-func pageFile(title string, user string, mode string) string {
+func dataFilePath(title string, user string, mode string) string {
 	os.MkdirAll("data", os.ModePerm)
 	if mode == "edit" {
 		return "data/" + title + ".md"
@@ -54,11 +54,11 @@ func pageFile(title string, user string, mode string) string {
 func (p *Page) save(mode string, assessment string) error {
 	if mode != "edit" {
 		if assessment != "" {
-			assessmentFile := pageFile(p.Title, p.User, "assessment")
+			assessmentFile := dataFilePath(p.Title, p.User, "assessment")
 			ioutil.WriteFile(assessmentFile, []byte(assessment), 0600)
 		}
 	}
-	filename := pageFile(p.Title, p.User, mode)
+	filename := dataFilePath(p.Title, p.User, mode)
 	if filename == "" {
 		return errors.New("invalid mode")
 	}
@@ -94,7 +94,7 @@ func mdToHtml(filename string, title string) ([]byte, []byte, error) {
 }
 
 func loadPage(title string, user string, mode string) (*Page, error) {
-	filename := pageFile(title, user, mode)
+	filename := dataFilePath(title, user, mode)
 	markdown, html, err := mdToHtml(filename, title)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func loadPage(title string, user string, mode string) (*Page, error) {
 }
 
 func userCommented(title string, user string) bool {
-	name := pageFile(title, user, "comment")
+	name := dataFilePath(title, user, "comment")
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {
 			return false
@@ -113,7 +113,7 @@ func userCommented(title string, user string) bool {
 }
 
 func userAssessment(title string, user string) (string, error) {
-	name := pageFile(title, user, "assessment")
+	name := dataFilePath(title, user, "assessment")
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {
 			return "Shrug", nil
@@ -132,7 +132,7 @@ func viewHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 		return
 	}
 
-	markdown, err := ioutil.ReadFile(pageFile(p.Title, p.User, "comment"))
+	markdown, err := ioutil.ReadFile(dataFilePath(p.Title, p.User, "comment"))
 	if err == nil {
 		p.Markdown = markdown
 	} else {
@@ -295,6 +295,12 @@ func topicsHandler(w http.ResponseWriter, r *http.Request, title string, user st
 	renderPage(w, "topics", p)
 }
 
+func forgetHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
+	os.Remove(dataFilePath(title, user, "comment"))
+	os.Remove(dataFilePath(title, user, "assessment"))
+	http.Redirect(w, r, "/view/" + title, http.StatusFound)
+}
+
 func renderPage(w http.ResponseWriter, tmpl string, p *Page) {
 	err := templates.ExecuteTemplate(w, tmpl + ".html", p)
 	if err != nil {
@@ -312,7 +318,7 @@ func getUser(r *http.Request) string {
 	return hexHash
 }
 
-var validPath = regexp.MustCompile("^/(static|topics|edit|save|view)/([a-zA-Z0-9-]*)$")
+var validPath = regexp.MustCompile("^/(static|topics|edit|save|view|forget)/([a-zA-Z0-9-]*)$")
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -342,6 +348,7 @@ func main() {
 	http.HandleFunc("/topics/", makeHandler(topicsHandler))
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
+	http.HandleFunc("/forget/", makeHandler(forgetHandler))
 	http.HandleFunc("/new/", newHandler)
 	http.HandleFunc("/save/", makeHandler(saveHandler))
 	log.Fatal(http.ListenAndServe(":8080", nil))

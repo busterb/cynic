@@ -21,6 +21,7 @@
 		<input type="submit" name="assessment" value="Not"/>
 		<input type="submit" name="next" value="Next"/>
 	</div>
+	<a href="/forget/{{.Title}}">Forget Assessment</a>
 	<input type="hidden" name="mode" value="comment"/>
 </form>
 
@@ -32,6 +33,7 @@
 <hr/>
 
 <strong>Assessments:</strong>
+{{if .Comments}}
 <table border="0" width="100%" >
 	<col width="70">
 {{range $key, $comment := .Comments}}
@@ -44,6 +46,11 @@
 	</tr>
 {{end}}
 </table>
+{{else}}
+	<p>
+	<img src="/static/homies.png" width="300"/><br/>
+	</p>
+{{end}}
 
 </div>
 </body>
