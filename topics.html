@@ -4,6 +4,7 @@
 	<img src="http://api.adorable.io/avatars/48/{{.User}}.png'" alt="{{.User}}"/>
 	<a href="/topics/">Security Cynic</a>
 </h1>
+{{.User}}
 
 <hr/>
 
@@ -29,8 +30,13 @@
 <div>
 	<strong>Old Topics:</strong>
 <ul>
+{{if .OldTopics}}
 {{range $key, $value := .OldTopics}}
 <li><a href="/view/{{$value.Title}}">{{$value.Title}}</a> ({{$value.Hotness}}% Hot, {{$value.Comments}} Reviews)</li>
+{{end}}
+{{else}}
+	<img src="/images/fail.jpg"/><br/>
+	If you could just start submitting topics, that'd be great.
 {{end}}
 </ul>
 </div>
