@@ -42,6 +42,7 @@ type Page struct {
 }
 
 func pageFile(title string, user string, mode string) string {
+	os.MkdirAll("data", os.ModePerm)
 	if mode == "edit" {
 		return "data/" + title + ".md"
 	} else if mode == "comment" || mode == "assessment" {
@@ -157,7 +158,6 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 
 	p := &Page{Title: title, User: user, Markdown: []byte(markdown)}
 
-	os.MkdirAll("data", os.ModePerm)
 	if !(assessment == "" && markdown == "") {
 		err := p.save(mode, assessment)
 		if err != nil {
@@ -209,6 +209,7 @@ func getUsers() (users []string, err error) {
 var templates = template.Must(template.ParseFiles("topics.html", "edit.html", "view.html"))
 
 func renderTopicComments(p *Page) error {
+	os.MkdirAll("data", os.ModePerm)
 	files, err := ioutil.ReadDir("data")
 	if err != nil {
 		return errors.New("could not read data directory")
@@ -242,6 +243,7 @@ func renderTopicComments(p *Page) error {
 }
 
 func getTopics(user string) (current []Topic, old []Topic, err error) {
+	os.MkdirAll("data", os.ModePerm)
 	files, err := ioutil.ReadDir("data")
 	if err != nil {
 		return nil, nil, err
