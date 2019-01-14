@@ -59,10 +59,10 @@ func loadPage(title string, user string) (*Page, error) {
 func viewHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
 	p, err := loadPage(title, user)
 	if err != nil {
-		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
+		http.Redirect(w, r, "/edit/" + title, http.StatusFound)
 		return
 	}
-	renderTemplate(w, "view", p)
+	renderPage(w, "view", p)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
@@ -70,7 +70,7 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 	if err != nil {
 		p = &Page{Title: title}
 	}
-	renderTemplate(w, "edit", p)
+	renderPage(w, "edit", p)
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
@@ -83,13 +83,31 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/view/"+title, http.StatusFound)
+	http.Redirect(w, r, "/view/" + title, http.StatusFound)
 }
 
-var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
+var templates = template.Must(template.ParseFiles("index.html", "edit.html", "view.html"))
 
-func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", p)
+func indexHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
+	files, err := ioutil.ReadDir("data")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var pages []string
+	for _, v := range files {
+		pages = append(pages, strings.Split(v.Name(), ".")[0])
+	}
+
+	err = templates.ExecuteTemplate(w, "index.html", pages)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func renderPage(w http.ResponseWriter, tmpl string, p *Page) {
+	err := templates.ExecuteTemplate(w, tmpl + ".html", p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -100,13 +118,13 @@ func getUser(r *http.Request) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(addr)))
 }
 
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9-]+)$")
+var validPath = regexp.MustCompile("^/(index|edit|save|view)/([a-zA-Z0-9-]*)$")
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m := validPath.FindStringSubmatch(r.URL.Path)
 		if m == nil {
-			http.NotFound(w, r)
+			http.Redirect(w, r, "/index/", http.StatusFound)
 			return
 		}
 		user := getUser(r)
@@ -114,7 +132,13 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string, string)) ht
 	}
 }
 
+func redirect(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/index/", http.StatusFound)
+}
+
 func main() {
+	http.HandleFunc("/", redirect)
+	http.HandleFunc("/index/", makeHandler(indexHandler))
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))
