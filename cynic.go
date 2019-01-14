@@ -179,6 +179,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 			return
 		}
 		http.Redirect(w, r, "/topics/", http.StatusFound)
+		return
 	}
 
 	http.Redirect(w, r, "/view/" + title, http.StatusFound)
