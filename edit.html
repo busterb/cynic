@@ -1,10 +1,12 @@
-<head><title>Security Cynic Service</title></head>
-<body>
+<head>
+	<title>Security Cynic Service</title>
+	<link rel="stylesheet" media="screen" href="/static/style.css">
+</head>
+<body id="css-zen-garden">
+<div class="page-wrapper">
 <h1>
-	<a href="/topics/">
 	<img src="http://api.adorable.io/avatars/48/{{.User}}.png'" alt="{{.User}}"/>
-	Security Cynic
-	</a>
+	<a href="/topics/">Security Cynic</a>
 </h1>
 {{.User}}
 
@@ -20,4 +22,5 @@ Preview:
 	<input type="hidden" name="mode" value="edit"/>
 </form>
 </body>
+</div>
 </html>

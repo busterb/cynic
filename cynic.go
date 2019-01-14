@@ -312,7 +312,7 @@ func getUser(r *http.Request) string {
 	return hexHash
 }
 
-var validPath = regexp.MustCompile("^/(images|topics|edit|save|view)/([a-zA-Z0-9-]*)$")
+var validPath = regexp.MustCompile("^/(static|topics|edit|save|view)/([a-zA-Z0-9-]*)$")
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -337,8 +337,8 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", redirectHandler)
-	fileServer := http.FileServer(http.Dir("images"))
-	http.Handle("/images/", http.StripPrefix("/images/", fileServer))
+	fileServer := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fileServer))
 	http.HandleFunc("/topics/", makeHandler(topicsHandler))
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))

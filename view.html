@@ -1,5 +1,9 @@
-<head><title>Security Cynic Service</title></head>
-<body>
+<head>
+	<title>Security Cynic Service</title>
+	<link rel="stylesheet" media="screen" href="/static/style.css">
+</head>
+<body id="css-zen-garden">
+<div class="page-wrapper">
 <h1>
 	<img src="http://api.adorable.io/avatars/48/{{.User}}.png'" alt="{{.User}}"/>
 	<a href="/topics/">Security Cynic</a>
@@ -34,12 +38,13 @@
 	<tr>
 		<td valign="top"><img src="http://api.adorable.io/avatars/48/{{$comment.User}}.png'" alt="{{$comment.User}}"></td>
 		<td valign="top" align="left">
-			<img width="120" hspace="10" align="left" src="/images/{{$comment.Reaction}}" alt="{{$comment.Assessment}}"/>
+			<img width="120" hspace="10" align="left" src="/static/{{$comment.Reaction}}" alt="{{$comment.Assessment}}"/>
 			{{$comment.Body}}
 		</td>
 	</tr>
 {{end}}
 </table>
 
+</div>
 </body>
 </html>

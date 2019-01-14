@@ -1,5 +1,9 @@
-<head><title>Security Cynic Service</title></head>
-<body>
+<head>
+	<title>Security Cynic Service</title>
+	<link rel="stylesheet" media="screen" href="/static/style.css">
+</head>
+<body id="css-zen-garden">
+<div class="page-wrapper">
 <h1>
 	<img src="http://api.adorable.io/avatars/48/{{.User}}.png'" alt="{{.User}}"/>
 	<a href="/topics/">Security Cynic</a>
@@ -20,7 +24,7 @@
 <li><strong><a href="/view/{{$value.Title}}">{{$value.Title}}</a> ({{$value.Hotness}}% Hot, {{$value.Comments}} Reviews)</strong></li>
 {{end}}
 {{else}}
-	<img src="/images/success.jpg"/><br/>
+	<img src="/static/success.jpg"/><br/>
 	All Done!
 </p>
 {{end}}
@@ -35,12 +39,13 @@
 <li><a href="/view/{{$value.Title}}">{{$value.Title}}</a> ({{$value.Hotness}}% Hot, {{$value.Comments}} Reviews)</li>
 {{end}}
 {{else}}
-	<img src="/images/fail.jpg"/><br/>
+	<img src="/static/fail.jpg" width="300"/><br/>
 	If you could just start submitting topics, that'd be great.
 {{end}}
 </ul>
 </div>
 
 <hr/>
+</div>
 </body>
 </html>
