@@ -43,9 +43,10 @@ func pageFile(title string, user string, mode string) string {
 
 func (p *Page) save(mode string, assessment string) error {
 	if mode != "edit" {
-		assessmentFile := pageFile(p.Title, p.User, "assessment")
-		log.Printf("%s", assessmentFile)
-		ioutil.WriteFile(assessmentFile, []byte(assessment), 0600)
+		if assessment != "" {
+			assessmentFile := pageFile(p.Title, p.User, "assessment")
+			ioutil.WriteFile(assessmentFile, []byte(assessment), 0600)
+		}
 	}
 	filename := pageFile(p.Title, p.User, mode)
 	if filename == "" {
@@ -105,7 +106,7 @@ func userAssessment(title string, user string) (string, error) {
 	name := pageFile(title, user, "assessment")
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {
-			return "Unknown", nil
+			return "Shrug", nil
 		}
     }
 	assessment, err := ioutil.ReadFile(name)
@@ -143,16 +144,43 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 	markdown := r.FormValue("markdown")
 	mode := r.FormValue("mode")
 	assessment := r.FormValue("assessment")
+	next := r.FormValue("next")
 
 	p := &Page{Title: title, User: user, Markdown: []byte(markdown)}
 
 	os.MkdirAll("data", os.ModePerm)
-	err := p.save(mode, assessment)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if !(assessment == "" && markdown == "") {
+		err := p.save(mode, assessment)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
+
+	if next == "Next" {
+		current, _, err := getTopics(user)
+		foundIndex := -1
+		nextIndex := -1
+		if (err == nil && len(current) > 0) {
+			for idx, topic := range current {
+				if topic == title {
+					foundIndex = idx
+					break
+				}
+			}
+			if foundIndex == len(current) - 1 {
+				nextIndex = 0
+			} else if (foundIndex < len(current) - 1) {
+				nextIndex = foundIndex + 1
+			}
+		}
+		if nextIndex != -1 {
+			http.Redirect(w, r, "/view/" + current[nextIndex], http.StatusFound)
+			return
+		}
+		http.Redirect(w, r, "/topics/", http.StatusFound)
+	}
+
 	http.Redirect(w, r, "/view/" + title, http.StatusFound)
 }
 
@@ -175,8 +203,10 @@ func renderTopicComments(p *Page) error {
 				reaction := "maybe.png"
 				if assessment == "Hot" {
 					reaction = "yes.gif"
-				} else {
+				} else if assessment == "Not" {
 					reaction = "no.png"
+				} else {
+					reaction = "shrug.jpg"
 				}
 
 				p.Comments = append(p.Comments,
@@ -190,26 +220,35 @@ func renderTopicComments(p *Page) error {
 	return nil
 }
 
-func topicsHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
+func getTopics(user string) (current []string, old []string, err error) {
 	files, err := ioutil.ReadDir("data")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, nil, err
 	}
 
-	p := &Page{Title: "Topics", User: user}
 	for _, v := range files {
 		name := v.Name()
 		if !strings.Contains(name, "_") {
 			topic := strings.Split(v.Name(), ".")[0]
 			if !userCommented(topic, user) {
-				p.CurrentTopics = append(p.CurrentTopics, topic)
+				current = append(current, topic)
 			} else {
-				p.OldTopics = append(p.OldTopics, topic)
+				old = append(old, topic)
 			}
 		}
 	}
+	return current, old, nil
+}
 
+func topicsHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
+	p := &Page{Title: "Topics", User: user}
+	current, old, err := getTopics(p.User)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	p.CurrentTopics = current
+	p.OldTopics = old
 	renderPage(w, "topics", p)
 }
 
@@ -257,8 +296,6 @@ func main() {
 	http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/new/", newHandler)
 	http.HandleFunc("/save/", makeHandler(saveHandler))
-
-
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 

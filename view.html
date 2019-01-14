@@ -7,18 +7,22 @@
 
 <hr/>
 
-<h2>{{.Title}} [<a href="/edit/{{.Title}}">Edit</a>]</h2>
-{{.Body}}
-
-<hr/>
-
 <strong>Your Assessment:</strong>
 <form action="/save/{{.Title}}" method="POST">
 	<div><textarea name="markdown" rows="10" cols="120">{{printf "%s" .Markdown}}</textarea></div>
-	<div><input type="submit" name="assessment" value="Hot"/>
-	<input type="submit" name="assessment" value="Not"/></div>
+	<div>
+		<input type="submit" name="assessment" value="Hot"/>
+		<input type="submit" name="assessment" value="Shrug"/>
+		<input type="submit" name="assessment" value="Not"/>
+		<input type="submit" name="next" value="Next"/>
+	</div>
 	<input type="hidden" name="mode" value="comment"/>
 </form>
+
+<hr/>
+
+<h2>{{.Title}} [<a href="/edit/{{.Title}}">Edit</a>]</h2>
+{{.Body}}
 
 <hr/>
 
@@ -35,7 +39,6 @@
 	</tr>
 {{end}}
 </table>
-
 
 </body>
 </html>
