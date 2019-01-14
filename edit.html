@@ -1,6 +1,22 @@
-<h1>Editing {{.Title}}</h1>
+<head><title>Security Cynic Service</title></head>
+<body>
+<h1>
+	<a href="/topics/">
+	<img src="http://api.adorable.io/avatars/48/{{.User}}.png'" alt="{{.User}}"/>
+	Security Cynic
+	</a>
+</h1>
+
+<h2>Editing "{{.Title}}"</h2>
+
+Preview:
+{{.Body}}
+<hr/>
 
 <form action="/save/{{.Title}}" method="POST">
-	<div><textarea name="markdown" rows="20" cols="80">{{printf "%s" .Markdown}}</textarea></div>
-	<div><input type="submit" value="Save"></div>
+	<div><textarea name="markdown" rows="10" cols="120">{{printf "%s" .Markdown}}</textarea></div>
+	<div><input type="submit" value="Preview"/><input type="submit" value="Save"/></div>
+	<input type="hidden" name="mode" value="edit"/>
 </form>
+</body>
+</html>

@@ -1,12 +1,29 @@
-<h1>{{.Title}}</h1>
+<head><title>Security Cynic Service</title></head>
+<body>
+<h1>
+	<img src="http://api.adorable.io/avatars/48/{{.User}}.png'" alt="{{.User}}"/>
+	<a href="/topics/">Security Cynic</a>
+</h1>
 
 <hr/>
 
+<h2>{{.Title}} [<a href="/edit/{{.Title}}">Edit</a>]</h2>
 {{.Body}}
+<hr/>
+
+Assessments:
+{{range $key, $comment := .Comments}}
+<p><img src="http://api.adorable.io/avatars/48/{{$comment.User}}.png'" alt="{{$comment.User}}" align="left">{{$comment.Body}}</p><br/>
+{{end}}
 
 <hr/>
 
-<p>
-User: {{.User}}
-<img src="http://api.adorable.io/avatars/48/{{.User}}.png'"/>
-<p>[<a href="/edit/{{.Title}}">edit</a>]</p>
+Your Assessment:
+<form action="/save/{{.Title}}" method="POST">
+	<div><textarea name="markdown" rows="10" cols="120"></textarea></div>
+	<div><input type="submit" value="Save"/></div>
+	<input type="hidden" name="mode" value="comment"/>
+</form>
+
+</body>
+</html>
