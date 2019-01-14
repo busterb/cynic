@@ -14,7 +14,7 @@ New Topic: <form action="/new/" method="POST"><input type="text" name="topic" co
 <div>
 Current Topics:
 <ul>
-{{range $key, $value := .NewTopics}}
+{{range $key, $value := .CurrentTopics}}
 <li><strong><a href="/view/{{$value}}">{{$value}}</a></strong></li>
 {{end}}
 </ul>

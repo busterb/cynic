@@ -9,21 +9,33 @@
 
 <h2>{{.Title}} [<a href="/edit/{{.Title}}">Edit</a>]</h2>
 {{.Body}}
-<hr/>
-
-Assessments:
-{{range $key, $comment := .Comments}}
-<p><img src="http://api.adorable.io/avatars/48/{{$comment.User}}.png'" alt="{{$comment.User}}" align="left">{{$comment.Body}}</p><br/>
-{{end}}
 
 <hr/>
 
-Your Assessment:
+<strong>Your Assessment:</strong>
 <form action="/save/{{.Title}}" method="POST">
-	<div><textarea name="markdown" rows="10" cols="120"></textarea></div>
-	<div><input type="submit" value="Save"/></div>
+	<div><textarea name="markdown" rows="10" cols="120">{{printf "%s" .Markdown}}</textarea></div>
+	<div><input type="submit" name="assessment" value="Hot"/>
+	<input type="submit" name="assessment" value="Not"/></div>
 	<input type="hidden" name="mode" value="comment"/>
 </form>
+
+<hr/>
+
+<strong>Assessments:</strong>
+<table border="0" width="100%" >
+	<col width="70">
+{{range $key, $comment := .Comments}}
+	<tr>
+		<td valign="top"><img src="http://api.adorable.io/avatars/48/{{$comment.User}}.png'" alt="{{$comment.User}}"></td>
+		<td valign="top" align="left">
+			<img width="120" hspace="10" align="left" src="/images/{{$comment.Reaction}}" alt="{{$comment.Assessment}}"/>
+			{{$comment.Body}}
+		</td>
+	</tr>
+{{end}}
+</table>
+
 
 </body>
 </html>

@@ -17,6 +17,8 @@ import (
 
 type Comment struct {
 	User string
+	Assessment string
+	Reaction string
 	Body template.HTML
 }
 
@@ -25,7 +27,7 @@ type Page struct {
 	Body  template.HTML
 	Markdown []byte
 	User string
-	NewTopics []string
+	CurrentTopics []string
 	OldTopics []string
 	Comments []Comment
 }
@@ -33,13 +35,18 @@ type Page struct {
 func pageFile(title string, user string, mode string) string {
 	if mode == "edit" {
 		return "data/" + title + ".md"
-	} else if mode == "comment" {
+	} else if mode == "comment" || mode == "assessment" {
 		return "data/" + title + "_" + mode + "_" + user + ".md"
 	}
 	return ""
 }
 
-func (p *Page) save(mode string) error {
+func (p *Page) save(mode string, assessment string) error {
+	if mode != "edit" {
+		assessmentFile := pageFile(p.Title, p.User, "assessment")
+		log.Printf("%s", assessmentFile)
+		ioutil.WriteFile(assessmentFile, []byte(assessment), 0600)
+	}
 	filename := pageFile(p.Title, p.User, mode)
 	if filename == "" {
 		return errors.New("invalid mode")
@@ -84,6 +91,28 @@ func loadPage(title string, user string, mode string) (*Page, error) {
 	return &Page{Title: title, User: user, Markdown: markdown, Body: template.HTML(html)}, nil
 }
 
+func userCommented(title string, user string) bool {
+	name := pageFile(title, user, "comment")
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+    }
+    return true
+}
+
+func userAssessment(title string, user string) (string, error) {
+	name := pageFile(title, user, "assessment")
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return "Unknown", nil
+		}
+    }
+	assessment, err := ioutil.ReadFile(name)
+	return string(assessment), err
+}
+
+
 func viewHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
 	p, err := loadPage(title, user, "edit")
 	renderTopicComments(p)
@@ -91,15 +120,15 @@ func viewHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 		http.Redirect(w, r, "/edit/" + title, http.StatusFound)
 		return
 	}
-	renderPage(w, "view", p)
-}
 
-func commentHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
-	p, err := loadPage(title, user, "comment")
-	if err != nil {
-		p = &Page{Title: title, User: user}
+	markdown, err := ioutil.ReadFile(pageFile(p.Title, p.User, "comment"))
+	if err == nil {
+		p.Markdown = markdown
+	} else {
+		p.Markdown = nil
 	}
-	renderPage(w, "comment", p)
+
+	renderPage(w, "view", p)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
@@ -113,10 +142,12 @@ func editHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 func saveHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
 	markdown := r.FormValue("markdown")
 	mode := r.FormValue("mode")
+	assessment := r.FormValue("assessment")
+
 	p := &Page{Title: title, User: user, Markdown: []byte(markdown)}
 
 	os.MkdirAll("data", os.ModePerm)
-	err := p.save(mode)
+	err := p.save(mode, assessment)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -125,7 +156,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 	http.Redirect(w, r, "/view/" + title, http.StatusFound)
 }
 
-var templates = template.Must(template.ParseFiles("topics.html", "comment.html", "edit.html", "view.html"))
+var templates = template.Must(template.ParseFiles("topics.html", "edit.html", "view.html"))
 
 func renderTopicComments(p *Page) error {
 	files, err := ioutil.ReadDir("data")
@@ -140,7 +171,17 @@ func renderTopicComments(p *Page) error {
 			_, html, err := mdToHtml("data/" + filename, p.Title)
 			if err == nil {
 				log.Printf("found comment " + filename)
-				p.Comments = append(p.Comments, Comment{User: user, Body: template.HTML(html)})
+				assessment, _ := userAssessment(p.Title, user)
+				reaction := "maybe.png"
+				if assessment == "Hot" {
+					reaction = "yes.gif"
+				} else {
+					reaction = "no.png"
+				}
+
+				p.Comments = append(p.Comments,
+					Comment{User: user, Assessment: assessment, Reaction: reaction,
+						Body: template.HTML(html)})
 			} else {
 				log.Printf("%s", err.Error())
 			}
@@ -159,8 +200,13 @@ func topicsHandler(w http.ResponseWriter, r *http.Request, title string, user st
 	p := &Page{Title: "Topics", User: user}
 	for _, v := range files {
 		name := v.Name()
-		if !strings.Contains(name, "_comment_") {
-			p.NewTopics = append(p.NewTopics, strings.Split(v.Name(), ".")[0])
+		if !strings.Contains(name, "_") {
+			topic := strings.Split(v.Name(), ".")[0]
+			if !userCommented(topic, user) {
+				p.CurrentTopics = append(p.CurrentTopics, topic)
+			} else {
+				p.OldTopics = append(p.OldTopics, topic)
+			}
 		}
 	}
 
@@ -179,7 +225,7 @@ func getUser(r *http.Request) string {
 	return fmt.Sprintf("%x", sha1.Sum([]byte(addr)))
 }
 
-var validPath = regexp.MustCompile("^/(topics|comment|edit|save|view|upvote|downvote)/([a-zA-Z0-9-]*)$")
+var validPath = regexp.MustCompile("^/(images|topics|edit|save|view)/([a-zA-Z0-9-]*)$")
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -204,16 +250,14 @@ func newHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", redirectHandler)
+	fileServer := http.FileServer(http.Dir("images"))
+	http.Handle("/images/", http.StripPrefix("/images/", fileServer))
 	http.HandleFunc("/topics/", makeHandler(topicsHandler))
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
-	http.HandleFunc("/comment/", makeHandler(commentHandler))
 	http.HandleFunc("/new/", newHandler)
-	/*
-	http.HandleFunc("/upvote/", makeHandler(upvoteHandler))
-	http.HandleFunc("/downvote/", makeHandler(downvoteHandler))
-	*/
 	http.HandleFunc("/save/", makeHandler(saveHandler))
+
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
