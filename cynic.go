@@ -199,7 +199,6 @@ func renderTopicComments(p *Page) error {
 			user := strings.Split(strings.Split(filename, "_comment_")[1], ".")[0]
 			_, html, err := mdToHtml("data/" + filename, p.Title)
 			if err == nil {
-				log.Printf("found comment " + filename)
 				assessment, _ := userAssessment(p.Title, user)
 				reaction := "maybe.png"
 				if assessment == "Hot" {
