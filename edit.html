@@ -15,7 +15,7 @@ Preview:
 
 <form action="/save/{{.Title}}" method="POST">
 	<div><textarea name="markdown" rows="10" cols="120">{{printf "%s" .Markdown}}</textarea></div>
-	<div><input type="submit" value="Preview"/><input type="submit" value="Save"/></div>
+	<div><input type="submit" value="Save"/></div>
 	<input type="hidden" name="mode" value="edit"/>
 </form>
 </body>

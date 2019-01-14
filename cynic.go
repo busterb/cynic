@@ -22,13 +22,22 @@ type Comment struct {
 	Body template.HTML
 }
 
+type Topic struct {
+	Title string
+	Hot int
+	Shrug int
+	Not int
+	Comments int
+	Hotness int
+}
+
 type Page struct {
 	Title string
 	Body  template.HTML
 	Markdown []byte
 	User string
-	CurrentTopics []string
-	OldTopics []string
+	CurrentTopics []Topic
+	OldTopics []Topic
 	Comments []Comment
 }
 
@@ -163,7 +172,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 		nextIndex := -1
 		if (err == nil && len(current) > 0) {
 			for idx, topic := range current {
-				if topic == title {
+				if topic.Title == title {
 					foundIndex = idx
 					break
 				}
@@ -175,7 +184,7 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 			}
 		}
 		if nextIndex != -1 {
-			http.Redirect(w, r, "/view/" + current[nextIndex], http.StatusFound)
+			http.Redirect(w, r, "/view/" + current[nextIndex].Title, http.StatusFound)
 			return
 		}
 		http.Redirect(w, r, "/topics/", http.StatusFound)
@@ -183,6 +192,18 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string, user stri
 	}
 
 	http.Redirect(w, r, "/view/" + title, http.StatusFound)
+}
+
+func getUsers() (users []string, err error) {
+	files, err := ioutil.ReadDir("users")
+	if err != nil {
+		return nil, errors.New("could not read users directory")
+	}
+
+	for _, v := range files {
+		users = append(users, v.Name())
+	}
+	return users, nil
 }
 
 var templates = template.Must(template.ParseFiles("topics.html", "edit.html", "view.html"))
@@ -220,17 +241,37 @@ func renderTopicComments(p *Page) error {
 	return nil
 }
 
-func getTopics(user string) (current []string, old []string, err error) {
+func getTopics(user string) (current []Topic, old []Topic, err error) {
 	files, err := ioutil.ReadDir("data")
 	if err != nil {
 		return nil, nil, err
 	}
 
+	allUsers, _ := getUsers()
+
 	for _, v := range files {
 		name := v.Name()
 		if !strings.Contains(name, "_") {
-			topic := strings.Split(v.Name(), ".")[0]
-			if !userCommented(topic, user) {
+			title := strings.Split(v.Name(), ".")[0]
+			topic := Topic{Title: title}
+
+			for _, u := range allUsers {
+				if userCommented(title, u) {
+					topic.Comments += 1
+				}
+				assessment, _ := userAssessment(title, u)
+				if assessment == "Hot" {
+					topic.Hot += 1
+				} else if assessment == "Not" {
+					topic.Not += 1
+				} else {
+					topic.Shrug += 1
+				}
+			}
+			if (topic.Comments > 0) {
+				topic.Hotness = int(float32(topic.Hot) / float32(topic.Comments) * 100);
+			}
+			if !userCommented(title, user) {
 				current = append(current, topic)
 			} else {
 				old = append(old, topic)
@@ -260,8 +301,13 @@ func renderPage(w http.ResponseWriter, tmpl string, p *Page) {
 }
 
 func getUser(r *http.Request) string {
+	os.MkdirAll("users", os.ModePerm)
 	addr := strings.Split(r.RemoteAddr, ":")[0]
-	return fmt.Sprintf("%x", sha1.Sum([]byte(addr)))
+	log.Printf("%s", addr)
+	hash := sha1.Sum([]byte(addr))
+	hexHash := fmt.Sprintf("%x", hash)
+	ioutil.WriteFile("users/" + hexHash, []byte(r.RemoteAddr), 0600)
+	return hexHash
 }
 
 var validPath = regexp.MustCompile("^/(images|topics|edit|save|view)/([a-zA-Z0-9-]*)$")

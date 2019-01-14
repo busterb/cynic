@@ -16,7 +16,7 @@
 <ul>
 {{if .CurrentTopics}}
 {{range $key, $value := .CurrentTopics}}
-<li><strong><a href="/view/{{$value}}">{{$value}}</a></strong></li>
+<li><strong><a href="/view/{{$value.Title}}">{{$value.Title}}</a> ({{$value.Hotness}}% Hot, {{$value.Comments}} Reviews)</strong></li>
 {{end}}
 {{else}}
 	<img src="/images/success.jpg"/><br/>
@@ -30,7 +30,7 @@
 	<strong>Old Topics:</strong>
 <ul>
 {{range $key, $value := .OldTopics}}
-<li><a href="/view/{{$value}}">{{$value}}</a></li>
+<li><a href="/view/{{$value.Title}}">{{$value.Title}}</a> ({{$value.Hotness}}% Hot, {{$value.Comments}} Reviews)</li>
 {{end}}
 </ul>
 </div>
