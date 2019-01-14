@@ -126,12 +126,12 @@ func userAssessment(title string, user string) (string, error) {
 
 func viewHandler(w http.ResponseWriter, r *http.Request, title string, user string) {
 	p, err := loadPage(title, user, "edit")
-	renderTopicComments(p)
 	if err != nil {
 		http.Redirect(w, r, "/edit/" + title, http.StatusFound)
 		return
 	}
 
+	renderTopicComments(p)
 	markdown, err := ioutil.ReadFile(dataFilePath(p.Title, p.User, "comment"))
 	if err == nil {
 		p.Markdown = markdown
