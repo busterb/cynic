@@ -31,5 +31,8 @@ getit: getit.go \
 clean:
 	rm -fr src pkg
 
+forget-assessments:
+	rm -f data/*_*
+
 distclean: clean
 	rm -fr data
