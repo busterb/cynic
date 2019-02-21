@@ -12,7 +12,8 @@ import (
 	"regexp"
 	"strings"
 	"github.com/microcosm-cc/bluemonday"
-	"github.com/russross/blackfriday"
+	"github.com/gomarkdown/markdown"
+	//"github.com/mattn/go-sqlite3"
 )
 
 type Comment struct {
@@ -65,32 +66,14 @@ func (p *Page) save(mode string, assessment string) error {
 	return ioutil.WriteFile(filename, p.Markdown, 0600)
 }
 
-func renderMarkdown(title string, input []byte) []byte {
-	extensions := 0
-	extensions |= blackfriday.EXTENSION_NO_INTRA_EMPHASIS
-	extensions |= blackfriday.EXTENSION_TABLES
-	extensions |= blackfriday.EXTENSION_FENCED_CODE
-	extensions |= blackfriday.EXTENSION_AUTOLINK
-	extensions |= blackfriday.EXTENSION_STRIKETHROUGH
-	extensions |= blackfriday.EXTENSION_SPACE_HEADERS
-
-	htmlFlags := 0
-	htmlFlags |= blackfriday.HTML_TOC
-	htmlFlags |= blackfriday.HTML_COMPLETE_PAGE
-
-	renderer := blackfriday.HtmlRenderer(htmlFlags, title, "")
-
-	return blackfriday.Markdown(input, renderer, extensions)
-}
-
 func mdToHtml(filename string, title string) ([]byte, []byte, error) {
-	markdown, err := ioutil.ReadFile(filename)
+	md, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, nil, err
 	}
-	unsafe := renderMarkdown(title, markdown)
+	unsafe := markdown.ToHTML(md, nil, nil)
 	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
-	return markdown, html, nil
+	return md, html, nil
 }
 
 func loadPage(title string, user string, mode string) (*Page, error) {

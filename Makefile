@@ -2,31 +2,20 @@ GO := GOPATH=`pwd` go
 all: cynic
 	./cynic
 
+bluemonday: src/github.com/microcosm-cc/bluemonday/README.md
 src/github.com/microcosm-cc/bluemonday/README.md:
 	$(GO) get -u github.com/microcosm-cc/bluemonday
 
-src/github.com/russross/blackfriday/README.md:
-	$(GO) get -u github.com/russross/blackfriday
+markdown: src/github.com/gomarkdown/markdown/README.md
+src/github.com/gomarkdown/markdown/README.md:
+	$(GO) get -u github.com/gomarkdown/markdown
 
-src/github.com/coreos/pkg/README.md:
-	$(GO) get -u github.com/coreos/pkg/flagutil
+go-sqlite3: src/github.com/mattn/go-sqlite3/README.md
+src/github.com/mattn/go-sqlite3/README.md:
+	$(GO) get -u github.com/mattn/go-sqlite3
 
-src/github.com/dghubble/go-twitter/README.md:
-	$(GO) get -u github.com/dghubble/go-twitter/twitter
-
-src/github.com/dghubble/oauth1/README.md:
-	$(GO) get -u github.com/dghubble/oauth1
-
-cynic: cynic.go  \
-	src/github.com/russross/blackfriday/README.md \
-	src/github.com/microcosm-cc/bluemonday/README.md
+cynic: cynic.go bluemonday markdown go-sqlite3
 	$(GO) build cynic.go
-
-getit: getit.go \
-	src/github.com/coreos/pkg/README.md \
-	src/github.com/dghubble/go-twitter/README.md \
-	src/github.com/dghubble/oauth1/README.md
-	$(GO) build getit.go
 
 clean:
 	rm -fr src pkg
